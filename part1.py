@@ -506,14 +506,15 @@ Important: Please create an example where the output of the reduce stage is a se
 
 
 def q14(rdd):
-    # Map to (key, value) pairs where the key splits the values into smaller groups
-    mapped = general_map(
-        rdd.map(lambda x: (1, x)), lambda k, v: [(v % 100000, v)]
-    )  # Use much larger modulo
+    # Convert numbers into key-value pairs with keys 0-9
+    mapped = general_map(rdd.map(lambda x: (1, x)), lambda k, v: [(v % 10, v)])
 
     def non_commutative_reduce(x, y):
-        # Simple non-commutative operation
-        return x - y
+        # Compare first digits to decide operation
+        if abs(x) % 10 > abs(y) % 10:
+            return x + y  # add if first number has larger last digit
+        else:
+            return x - y  # subtract otherwise
 
     reduced = general_reduce(mapped, non_commutative_reduce)
 
