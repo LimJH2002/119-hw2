@@ -156,7 +156,9 @@ def q2():
 and keys for Reduce be different might be useful.
 
 === ANSWER Q3 BELOW ===
-
+One scenario where having different keys for Map and Reduce is useful is when processing log files. 
+The Map stage might use timestamps as keys to group events, 
+while the Reduce stage could use event types as keys to aggregate statistics across different time periods.
 === END OF Q3 ANSWER ===
 """
 
@@ -175,16 +177,14 @@ set of integers between 1 and 1 million (inclusive).
 def load_input():
     # Return a parallelized RDD with the integers between 1 and 1,000,000
     # This will be referred to in the following questions.
-    # TODO
-    raise NotImplementedError
+    return sc.parallelize(range(1, 1_000_001))
 
 
 def q4(rdd):
     # Input: the RDD from load_input
     # Output: the length of the dataset.
     # You may use general_map or general_reduce here if you like (but you don't have to) to get the total count.
-    # TODO
-    raise NotImplementedError
+    return rdd.count()
 
 
 """
@@ -197,8 +197,14 @@ Now use the general_map and general_reduce functions to answer the following que
 def q5(rdd):
     # Input: the RDD from Q4
     # Output: the average value
-    # TODO
-    raise NotImplementedError
+    mapped = general_map(rdd.map(lambda x: (1, x)), lambda k, v: [(1, (v, 1))])
+
+    # Reduce to get sum and count
+    reduced = general_reduce(mapped, lambda a, b: (a[0] + b[0], a[1] + b[1]))
+
+    # Calculate average from the single (sum, count) pair
+    result = reduced.map(lambda x: x[1][0] / x[1][1]).collect()[0]
+    return result
 
 
 """
@@ -218,8 +224,21 @@ Your answer should use the general_map and general_reduce functions as much as p
 def q6(rdd):
     # Input: the RDD from Q4
     # Output: a tuple (most common digit, most common frequency, least common digit, least common frequency)
-    # TODO
-    raise NotImplementedError
+    def map_digits(k, v):
+        return [(d, 1) for d in str(v)]
+
+    # Map phase
+    mapped = general_map(rdd.map(lambda x: (1, x)), map_digits)
+
+    # Reduce phase to count frequencies
+    counts = general_reduce(mapped, lambda a, b: a + b)
+
+    # Convert to regular Python collection and find min/max
+    freq_counts = counts.collect()
+    max_digit = max(freq_counts, key=lambda x: x[1])
+    min_digit = min(freq_counts, key=lambda x: x[1])
+
+    return (max_digit[0], max_digit[1], min_digit[0], min_digit[1])
 
 
 """
@@ -251,14 +270,117 @@ Notes:
 - Please implement this without using an external library such as `inflect`.
 """
 
+
 # *** Define helper function(s) here ***
+def number_to_words(n):
+    """Convert a number to its English representation"""
+    ones = [
+        "",
+        "one",
+        "two",
+        "three",
+        "four",
+        "five",
+        "six",
+        "seven",
+        "eight",
+        "nine",
+        "ten",
+        "eleven",
+        "twelve",
+        "thirteen",
+        "fourteen",
+        "fifteen",
+        "sixteen",
+        "seventeen",
+        "eighteen",
+        "nineteen",
+    ]
+    tens = [
+        "",
+        "",
+        "twenty",
+        "thirty",
+        "forty",
+        "fifty",
+        "sixty",
+        "seventy",
+        "eighty",
+        "ninety",
+    ]
+
+    def process_chunk(num, index):
+        if num == 0:
+            return ""
+
+        chunk_words = []
+
+        # Handle hundreds
+        if num >= 100:
+            chunk_words.append(f"{ones[num // 100]} hundred")
+            if num % 100 != 0:
+                chunk_words.append("and")
+            num %= 100
+
+        # Handle tens and ones
+        if num > 0:
+            if num < 20:
+                chunk_words.append(ones[num])
+            else:
+                tens_word = tens[num // 10]
+                ones_word = ones[num % 10]
+                if ones_word:
+                    chunk_words.append(f"{tens_word} {ones_word}")
+                else:
+                    chunk_words.append(tens_word)
+
+        # Add scale word if needed
+        if index == 1 and chunk_words:  # Thousands
+            chunk_words.append("thousand")
+        elif index == 2 and chunk_words:  # Millions
+            chunk_words.append("million")
+
+        return " ".join(chunk_words)
+
+    if n == 0:
+        return "zero"
+
+    # Split number into chunks of 3 digits
+    chunks = []
+    while n > 0:
+        chunks.append(n % 1000)
+        n //= 1000
+
+    # Process each chunk
+    words = []
+    for i, chunk in enumerate(chunks):
+        chunk_words = process_chunk(chunk, i)
+        if chunk_words:
+            words.append(chunk_words)
+
+    return " ".join(reversed(words))
 
 
 def q7(rdd):
     # Input: the RDD from Q4
     # Output: a tulpe (most common char, most common frequency, least common char, least common frequency)
-    # TODO
-    raise NotImplementedError
+    def map_letters(k, v):
+        # Convert number to words and count each letter
+        word = number_to_words(v).replace(" ", "").replace("-", "")
+        return [(c, 1) for c in word if c.isalpha()]
+
+    # Map each number to (letter, 1) pairs
+    mapped = general_map(rdd.map(lambda x: (1, x)), map_letters)
+
+    # Reduce to get letter counts
+    counts = general_reduce(mapped, lambda a, b: a + b)
+
+    # Find most and least common letters
+    freq_counts = counts.collect()
+    max_letter = max(freq_counts, key=lambda x: x[1])
+    min_letter = min(freq_counts, key=lambda x: x[1])
+
+    return (max_letter[0], max_letter[1], min_letter[0], min_letter[1])
 
 
 """
@@ -270,8 +392,7 @@ You will need a new load_input function.
 
 
 def load_input_bigger():
-    # TODO
-    raise NotImplementedError
+    return sc.parallelize(range(1, 100_000_001))
 
 
 def q8_a():
@@ -279,8 +400,7 @@ def q8_a():
     # It should call into q6() with the new RDD!
     # Don't re-implemented the q6 logic.
     # Output: a tuple (most common digit, most common frequency, least common digit, least common frequency)
-    # TODO
-    raise NotImplementedError
+    return q6(load_input_bigger())
 
 
 def q8_b():
@@ -288,8 +408,7 @@ def q8_b():
     # It should call into q7() with the new RDD!
     # Don't re-implemented the q6 logic.
     # Output: a tulpe (most common char, most common frequency, least common char, least common frequency)
-    # TODO
-    raise NotImplementedError
+    return q7(load_input_bigger())
 
 
 """
@@ -298,14 +417,26 @@ Discussion questions
 9. State the values of k1, v1, k2, and v2 for your Q6 and Q7 pipelines.
 
 === ANSWER Q9 BELOW ===
+Q6:
+k1: Any value (use 1 for simplicity)
+v1: The original number
+k2: Individual digits ('0'-'9')
+v2: Count of occurrences
 
+Q7:
+k1: Any value (use 1 for simplicity)
+v1: The original number
+k2: Individual letters ('a'-'z')
+v2: Count of occurrences
 === END OF Q9 ANSWER ===
 
 10. Do you think it would be possible to compute the above using only the
 "simplified" MapReduce we saw in class? Why or why not?
 
 === ANSWER Q10 BELOW ===
-
+The simplified MapReduce from class would be insufficient because it only allows mapping items to exactly one key-value pair. 
+In Q6 and Q7, we need to emit multiple key-value pairs for each input (one for each digit/letter), 
+which requires the more general form of MapReduce.
 === END OF Q10 ANSWER ===
 """
 
@@ -327,8 +458,14 @@ Output a set of (key, value) pairs after the reduce stage.
 def q11(rdd):
     # Input: the RDD from Q4
     # Output: the result of the pipeline, a set of (key, value) pairs
-    # TODO
-    raise NotImplementedError
+    return set(
+        general_reduce(
+            general_map(
+                rdd.map(lambda x: (1, x)), lambda k, v: []
+            ),  # Empty list for all inputs
+            lambda x, y: x,
+        ).collect()
+    )
 
 
 """
@@ -337,7 +474,10 @@ Does this depend on anything specific about how
 we chose to define general_reduce?
 
 === ANSWER Q12 BELOW ===
-
+The result of q11 is an empty set because the map stage returns an empty list for every input value. 
+When the map phase produces no key-value pairs at all, there's nothing for the reduce phase to process. 
+This behavior doesn't depend on how general_reduce is implemented specifically - if there are no values to reduce, 
+there will be no output regardless of the reduction function. 
 === END OF Q12 ANSWER ===
 
 13. Lastly, we will explore a second edge case, where the reduce stage can
@@ -350,7 +490,10 @@ Why do you imagine it could be the case that the output of the reduce stage
 is different depending on the order of the input?
 
 === ANSWER Q13 BELOW ===
-
+The reduce operation processes pairs of values using the reduction function, 
+but the order in which these pairs are combined can vary. 
+If the reduce function is not both commutative (a+b = b+a) and associative ((a+b)+c = a+(b+c)), 
+then different orderings can produce different results. 
 === END OF Q13 ANSWER ===
 
 14.
@@ -363,10 +506,21 @@ Important: Please create an example where the output of the reduce stage is a se
 
 
 def q14(rdd):
-    # Input: the RDD from Q4
-    # Output: the result of the pipeline, a set of (key, value) pairs
-    # TODO
-    raise NotImplementedError
+    # Map numbers to their remainder mod 10 as key
+    mapped = general_map(rdd.map(lambda x: (1, x)), lambda k, v: [(v % 10, v)])
+
+    # Non-commutative reducer that creates different results based on order:
+    def non_commutative_reduce(x, y):
+        # If larger number is processed first, return sum
+        # If smaller number is processed first, return difference
+        if x > y:
+            return x + y
+        else:
+            return x - y
+
+    reduced = general_reduce(mapped, non_commutative_reduce)
+
+    return set(reduced.collect())
 
 
 """
@@ -377,7 +531,9 @@ Does it exhibit nondeterministic behavior on different runs?
 including partitioning.
 
 === ANSWER Q15 BELOW ===
-
+Q14  exhibits nondeterministic behavior because the reducer function keeps the larger number between pairs but does this across partitions in an unpredictable order. 
+Running it multiple times might give different results since Spark makes no guarantees about the order of processing within partitions. 
+The exact behavior depends on how Spark schedules the tasks and how data gets distributed across partitions.
 === END OF Q15 ANSWER ===
 
 16.
@@ -498,8 +654,8 @@ def PART_1_PIPELINE():
     log_answer("q5", q5, dfs)
     log_answer("q6", q6, dfs)
     log_answer("q7", q7, dfs)
-    log_answer("q8a", q8_a)
-    log_answer("q8b", q8_b)
+    # log_answer("q8a", q8_a)
+    # log_answer("q8b", q8_b)
     # 9: commentary
     # 10: commentary
 
