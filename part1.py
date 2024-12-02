@@ -28,6 +28,7 @@ If you aren't sure of the type of the output, please post a question on Piazza.
 # Spark boilerplate (remember to always add this at the top of any Spark file)
 import pyspark
 from pyspark.sql import SparkSession
+
 spark = SparkSession.builder.appName("DataflowGraphExample").getOrCreate()
 sc = spark.sparkContext
 
@@ -62,18 +63,16 @@ If you have done it correctly, the following test should pass.
 Don't change the q1() answer. It should fill out automatically.
 """
 
+
 def general_map(rdd, f):
     """
     rdd: an RDD with values of type (k1, v1)
     f: a function (k1, v1) -> List[(k2, v2)]
     output: an RDD with values of type (k2, v2)
     """
-    # TODO
-    raise NotImplementedError
-    # ^^^^ remove TODO and raise NotImplementedError when implemented :)
+    return rdd.flatMap(lambda pair: f(pair[0], pair[1]))
 
-# Remove skip when implemented!
-@pytest.mark.skip
+
 def test_general_map():
     rdd = sc.parallelize(["cat", "dog", "cow", "zebra"])
 
@@ -94,12 +93,14 @@ def test_general_map():
     assert sum(rdd4.collect()) == 14
     assert set(rdd5.collect()) == set([(1, ())])
 
+
 def q1():
     # Answer to this part: don't change this
     rdd = sc.parallelize(["cat", "dog", "cow", "zebra"])
     rdd1 = rdd.map(lambda x: (x[0], x))
     rdd2 = general_map(rdd1, lambda k, v: [(1, v[-1])])
     return sorted(rdd2.collect())
+
 
 """
 2. Fill in the reduce function using operations on RDDs.
@@ -110,6 +111,7 @@ If you have done it correctly, the following test should pass.
 Don't change the q2() answer. It should fill out automatically.
 """
 
+
 def general_reduce(rdd, f):
     """
     rdd: an RDD with values of type (k2, v2)
@@ -117,11 +119,9 @@ def general_reduce(rdd, f):
     output: an RDD with values of type (k2, v2),
         and just one single value per key
     """
-    # TODO
-    raise NotImplementedError
+    return rdd.reduceByKey(f)
 
-# Remove skip when implemented!
-@pytest.mark.skip
+
 def test_general_reduce():
     rdd = sc.parallelize(["cat", "dog", "cow", "zebra"])
 
@@ -137,11 +137,11 @@ def test_general_reduce():
     rdd4 = general_reduce(rdd3, lambda x, y: x + y)
     res4 = sorted(rdd4.collect())
 
-    assert (
-        res2 == set([('c', "catcow"), ('d', "dog"), ('z', "zebra")])
-        or res2 == set([('c', "cowcat"), ('d', "dog"), ('z', "zebra")])
+    assert res2 == set([("c", "catcow"), ("d", "dog"), ("z", "zebra")]) or res2 == set(
+        [("c", "cowcat"), ("d", "dog"), ("z", "zebra")]
     )
-    assert res4 == [('c', 6), ('d', 3), ('z', 5)]
+    assert res4 == [("c", 6), ("d", 3), ("z", 5)]
+
 
 def q2():
     # Answer to this part: don't change this
@@ -149,6 +149,7 @@ def q2():
     rdd1 = rdd.map(lambda x: (x[0], x))
     rdd2 = general_reduce(rdd1, lambda x, y: "hello")
     return sorted(rdd2.collect())
+
 
 """
 3. Name one scenario where having the keys for Map
@@ -170,11 +171,13 @@ set of integers between 1 and 1 million (inclusive).
 4. First, we need a function that loads the input.
 """
 
+
 def load_input():
     # Return a parallelized RDD with the integers between 1 and 1,000,000
     # This will be referred to in the following questions.
     # TODO
     raise NotImplementedError
+
 
 def q4(rdd):
     # Input: the RDD from load_input
@@ -183,17 +186,20 @@ def q4(rdd):
     # TODO
     raise NotImplementedError
 
+
 """
 Now use the general_map and general_reduce functions to answer the following questions.
 
 5. Among the numbers from 1 to 1 million, what is the average value?
 """
 
+
 def q5(rdd):
     # Input: the RDD from Q4
     # Output: the average value
     # TODO
     raise NotImplementedError
+
 
 """
 6. Among the numbers from 1 to 1 million, when written out,
@@ -208,11 +214,13 @@ Frequency is the number of occurences of each value.
 Your answer should use the general_map and general_reduce functions as much as possible.
 """
 
+
 def q6(rdd):
     # Input: the RDD from Q4
     # Output: a tuple (most common digit, most common frequency, least common digit, least common frequency)
     # TODO
     raise NotImplementedError
+
 
 """
 7. Among the numbers from 1 to 1 million, written out in English, which letter is most common?
@@ -245,11 +253,13 @@ Notes:
 
 # *** Define helper function(s) here ***
 
+
 def q7(rdd):
     # Input: the RDD from Q4
     # Output: a tulpe (most common char, most common frequency, least common char, least common frequency)
     # TODO
     raise NotImplementedError
+
 
 """
 8. Does the answer change if we have the numbers from 1 to 100,000,000?
@@ -258,9 +268,11 @@ Make a version of both pipelines from Q6 and Q7 for this case.
 You will need a new load_input function.
 """
 
+
 def load_input_bigger():
     # TODO
     raise NotImplementedError
+
 
 def q8_a():
     # version of Q6
@@ -270,6 +282,7 @@ def q8_a():
     # TODO
     raise NotImplementedError
 
+
 def q8_b():
     # version of Q7
     # It should call into q7() with the new RDD!
@@ -277,6 +290,7 @@ def q8_b():
     # Output: a tulpe (most common char, most common frequency, least common char, least common frequency)
     # TODO
     raise NotImplementedError
+
 
 """
 Discussion questions
@@ -309,11 +323,13 @@ our data set from Q4. It should use the general_map and general_reduce functions
 Output a set of (key, value) pairs after the reduce stage.
 """
 
+
 def q11(rdd):
     # Input: the RDD from Q4
     # Output: the result of the pipeline, a set of (key, value) pairs
     # TODO
     raise NotImplementedError
+
 
 """
 12. What happened? Explain below.
@@ -345,11 +361,13 @@ Important: Please create an example where the output of the reduce stage is a se
 (So k2 and v2 are both integers.)
 """
 
+
 def q14(rdd):
     # Input: the RDD from Q4
     # Output: the result of the pipeline, a set of (key, value) pairs
     # TODO
     raise NotImplementedError
+
 
 """
 15.
@@ -368,20 +386,24 @@ Lastly, try the same pipeline with at least 3 different levels of parallelism.
 Write three functions, a, b, and c that use different levels of parallelism.
 """
 
+
 def q16_a():
     # For this one, create the RDD yourself. Choose the number of partitions.
     # TODO
     raise NotImplementedError
+
 
 def q16_b():
     # For this one, create the RDD yourself. Choose the number of partitions.
     # TODO
     raise NotImplementedError
 
+
 def q16_c():
     # For this one, create the RDD yourself. Choose the number of partitions.
     # TODO
     raise NotImplementedError
+
 
 """
 Discussion questions
@@ -419,9 +441,11 @@ For this part, just return the answer "True" at the end if you found
 it possible to implement the example, and "False" if it was not.
 """
 
+
 def q20():
     # TODO
     raise NotImplementedError
+
 
 """
 That's it for Part 1!
@@ -439,22 +463,24 @@ Check out the output in output/part1-answers.txt.
 ANSWER_FILE = "output/part1-answers.txt"
 UNFINISHED = 0
 
+
 def log_answer(name, func, *args):
     try:
         answer = func(*args)
         print(f"{name} answer: {answer}")
-        with open(ANSWER_FILE, 'a') as f:
-            f.write(f'{name},{answer}\n')
+        with open(ANSWER_FILE, "a") as f:
+            f.write(f"{name},{answer}\n")
             print(f"Answer saved to {ANSWER_FILE}")
     except NotImplementedError:
         print(f"Warning: {name} not implemented.")
-        with open(ANSWER_FILE, 'a') as f:
-            f.write(f'{name},Not Implemented\n')
+        with open(ANSWER_FILE, "a") as f:
+            f.write(f"{name},Not Implemented\n")
         global UNFINISHED
         UNFINISHED += 1
 
+
 def PART_1_PIPELINE():
-    open(ANSWER_FILE, 'w').close()
+    open(ANSWER_FILE, "w").close()
 
     try:
         dfs = load_input()
@@ -499,7 +525,8 @@ def PART_1_PIPELINE():
 
     return f"{UNFINISHED} unfinished questions"
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     log_answer("PART 1", PART_1_PIPELINE)
 
 """

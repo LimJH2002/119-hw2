@@ -1,0 +1,15 @@
+q1,[(1, 'a'), (1, 'g'), (1, 't'), (1, 'w')]
+q2,[('c', 'hello'), ('d', 'dog'), ('z', 'zebra')]
+q4,Not Implemented
+q5,Not Implemented
+q6,Not Implemented
+q7,Not Implemented
+q8a,Not Implemented
+q8b,Not Implemented
+q11,Not Implemented
+q14,Not Implemented
+q16a,Not Implemented
+q16b,Not Implemented
+q16c,Not Implemented
+q20,Not Implemented
+PART 1,12 unfinished questions
