@@ -506,18 +506,14 @@ Important: Please create an example where the output of the reduce stage is a se
 
 
 def q14(rdd):
-    # Map to (key, value) pairs where key is mod 10
-    mapped = general_map(rdd.map(lambda x: (1, x)), lambda k, v: [(v % 10, v)])
+    # Map to (key, value) pairs where the key splits the values into smaller groups
+    mapped = general_map(
+        rdd.map(lambda x: (1, x)), lambda k, v: [(v % 100000, v)]
+    )  # Use much larger modulo
 
-    # Reducer that uses the key to determine the operation
     def non_commutative_reduce(x, y):
-        # We can access the key since it's the remainder
-        key = x % 10
-        # If key is even, subtract; if odd, add
-        if key % 2 == 0:
-            return x - y
-        else:
-            return x + y
+        # Simple non-commutative operation
+        return x - y
 
     reduced = general_reduce(mapped, non_commutative_reduce)
 
