@@ -506,17 +506,18 @@ Important: Please create an example where the output of the reduce stage is a se
 
 
 def q14(rdd):
-    # Map numbers to their remainder mod 10 as key
+    # Map to (key, value) pairs where key is mod 10
     mapped = general_map(rdd.map(lambda x: (1, x)), lambda k, v: [(v % 10, v)])
 
-    # Non-commutative reducer that creates different results based on order:
+    # Reducer that uses the key to determine the operation
     def non_commutative_reduce(x, y):
-        # If larger number is processed first, return sum
-        # If smaller number is processed first, return difference
-        if x > y:
-            return x + y
-        else:
+        # We can access the key since it's the remainder
+        key = x % 10
+        # If key is even, subtract; if odd, add
+        if key % 2 == 0:
             return x - y
+        else:
+            return x + y
 
     reduced = general_reduce(mapped, non_commutative_reduce)
 
