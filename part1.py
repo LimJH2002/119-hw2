@@ -392,7 +392,7 @@ You will need a new load_input function.
 
 
 def load_input_bigger():
-    return sc.parallelize(range(1, 100_000_001))
+    return sc.parallelize(range(1, 10_000_001))
 
 
 def q8_a():
@@ -506,11 +506,8 @@ Important: Please create an example where the output of the reduce stage is a se
 
 
 def q14(rdd):
-    # Map to (key, value) pairs where key is just remainder mod 2
-    # This ensures we have just 2 groups where order will matter
-    mapped = general_map(rdd.map(lambda x: (1, x)), lambda k, v: [(v % 12, v)])
+    mapped = general_map(rdd.map(lambda x: (1, x)), lambda k, v: [(v % 2, v)])
 
-    # Simple non-commutative operation: subtract
     reduced = general_reduce(mapped, lambda x, y: x - y)
 
     return set(reduced.collect())
@@ -524,9 +521,8 @@ Does it exhibit nondeterministic behavior on different runs?
 including partitioning.
 
 === ANSWER Q15 BELOW ===
-Q14  exhibits nondeterministic behavior because the reducer function keeps the larger number between pairs but does this across partitions in an unpredictable order. 
-Running it multiple times might give different results since Spark makes no guarantees about the order of processing within partitions. 
-The exact behavior depends on how Spark schedules the tasks and how data gets distributed across partitions.
+Q14 does not exhibit nondeterministic behavior even though the reduce function is not commutative or associative.
+This might be because the RDD is partitioned in a way that ensures the same pairs are always combined in the same order.
 === END OF Q15 ANSWER ===
 
 16.
@@ -538,20 +534,20 @@ Write three functions, a, b, and c that use different levels of parallelism.
 
 def q16_a():
     # For this one, create the RDD yourself. Choose the number of partitions.
-    # TODO
-    raise NotImplementedError
+    rdd = sc.parallelize(range(1, 1_000_001), 1)
+    return q14(rdd)
 
 
 def q16_b():
     # For this one, create the RDD yourself. Choose the number of partitions.
-    # TODO
-    raise NotImplementedError
+    rdd = sc.parallelize(range(1, 1_000_001), 2)
+    return q14(rdd)
 
 
 def q16_c():
     # For this one, create the RDD yourself. Choose the number of partitions.
-    # TODO
-    raise NotImplementedError
+    rdd = sc.parallelize(range(1, 1_000_001), 10)
+    return q14(rdd)
 
 
 """
@@ -560,14 +556,18 @@ Discussion questions
 17. Was the answer different for the different levels of parallelism?
 
 === ANSWER Q17 BELOW ===
-
+The answer was different for different levels of parallelism.
 === END OF Q17 ANSWER ===
 
 18. Do you think this would be a serious problem if this occured on a real-world pipeline?
 Explain why or why not.
 
 === ANSWER Q18 BELOW ===
+Yes, this would be a serious problem in real-world pipelines because:
 
+1. Non-deterministic results make debugging extremely difficult
+2.You can't reliably reproduce issues or verify fixes
+3. Different runs of the same pipeline could produce different business insights
 === END OF Q18 ANSWER ===
 
 ===== Q19-20: Further reading =====
@@ -580,7 +580,12 @@ https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/icsecomp14se
 Take a look at the paper. What is one sentence you found interesting?
 
 === ANSWER Q19 BELOW ===
+"Our extensive study of production MapReduce programs reveals interesting findings on commutativity, nondeterminism, and correctness. 
+Although non-commutative reduce functions lead to five bugs in our sample of well-tested production programs,
+we surprisingly have found that many non-commutative reduce functions are mostly harmless due to, for example, implicit data properties."
 
+This sentence is interesting because it reveals the key surprising finding that non-commutative reducers, while potentially problematic, 
+are often harmless in practice due to implicit properties of the data they process.
 === END OF Q19 ANSWER ===
 
 20.
@@ -592,8 +597,7 @@ it possible to implement the example, and "False" if it was not.
 
 
 def q20():
-    # TODO
-    raise NotImplementedError
+    return True
 
 
 """
@@ -647,8 +651,8 @@ def PART_1_PIPELINE():
     log_answer("q5", q5, dfs)
     log_answer("q6", q6, dfs)
     log_answer("q7", q7, dfs)
-    # log_answer("q8a", q8_a)
-    # log_answer("q8b", q8_b)
+    log_answer("q8a", q8_a)
+    log_answer("q8b", q8_b)
     # 9: commentary
     # 10: commentary
 
