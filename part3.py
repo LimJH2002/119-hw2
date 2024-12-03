@@ -44,6 +44,8 @@ Once this is done, define a *new* version of the PART_1_PIPELINE, below,
 that takes as input the parameters N and P.
 (This time, you don't have to consider the None case.)
 You should not modify the existing PART_1_PIPELINE.
+
+You may either delete the parts of the code that save the output file, or change these to a different output file like part1-answers-temp.txt.
 """
 
 import os

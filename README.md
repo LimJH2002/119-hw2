@@ -36,8 +36,7 @@ In order to receive credit for your work, please follow the following guidelines
 `pytest part1.py`, `pytest part2.py`, and `pytest part3.py`.
 We cannot give credit to code that doesn't run on our setup!
 
-- Make sure that your `output/part1-answers.txt`, `output/part2-answers.txt`, and `output/part3-answers.txt` files are generated and up-to-date. These files should be included in your code that you commit/upload, and they should also be regenerated whenever you run the code.
-Similarly, make sure your code is generating all plots in the `output/` folder.
+- Make sure that your `output/part1-answers.txt` is generated and up-to-date, and all ohter output files in the `output/` folder. These files should be included in your code that you commit/upload, and they should also be regenerated whenever you run the code.
 
 - To double check, try downloading the code from your submission and running it, to make sure you didn't miss anything.
 
