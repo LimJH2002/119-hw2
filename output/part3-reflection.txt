@@ -1,0 +1,48 @@
+1. 
+According to dataflow graph theory with data parallelism:
+Throughput should scale linearly with increased parallelism - doubling from P=1 to P=2 should double throughput
+Latency should remain constant regardless of parallelism level since each data item goes through the same processing path
+Processing time should scale linearly with input size
+
+2.
+The actual measurements show significant deviations from theory. Looking at the measurements:
+
+Throughput at N=1M:
+P=1: ~65,000 items/sec
+P=2: ~120,000 items/sec (1.85x improvement)
+P=4: ~220,000 items/sec (1.83x improvement)
+P=8: ~370,000 items/sec (1.68x improvement)
+P=16: ~310,000 items/sec (decrease)
+
+Latency at N=10M:
+P=1: ~350,000 ms
+P=2: ~190,000 ms
+P=4: ~100,000 ms
+P=8: ~58,000 ms
+P=16: ~58,000 ms
+
+3.
+Conjecture 1 (Low Parallelism P=1-2): Overhead dominated by basic costs:
+Task initialization time
+Data serialization/deserialization
+These create a baseline overhead but don't yet cause major contention
+
+Conjecture 2 (Medium Parallelism P=4-8): Communication and coordination become significant:
+Increased data movement between nodes
+More complex task scheduling
+Greater memory pressure
+
+Conjecture 3 (High Parallelism P=16): Resource contention dominates:
+CPU scheduling overhead with many threads
+Memory bandwidth saturation
+Network congestion during shuffles
+Task coordination complexity
+These cause actual performance degradation
+
+The theoretical model fails to account for several real-world factors:
+Data movement costs (network and memory)
+Resource initialization overhead
+Task scheduling complexity
+Memory management costs
+Hardware resource limits
+Coordination overhead between parallel tasks

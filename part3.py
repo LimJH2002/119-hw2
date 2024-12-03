@@ -46,6 +46,25 @@ that takes as input the parameters N and P.
 You should not modify the existing PART_1_PIPELINE.
 """
 
+import os
+import time
+
+import matplotlib.pyplot as plt
+import pyspark
+from pyspark.sql import SparkSession
+
+import part1
+
+spark = SparkSession.builder.appName("PerformanceMeasurement").getOrCreate()
+sc = spark.sparkContext
+
+# Share the SparkSession with part1
+import part1
+
+part1.spark = spark
+part1.sc = sc
+
+
 def PART_1_PIPELINE_PARAMETRIC(N, P):
     """
     TODO: Follow the same logic as PART_1_PIPELINE
@@ -56,7 +75,22 @@ def PART_1_PIPELINE_PARAMETRIC(N, P):
     - load_input_bigger (including q8_a and q8_b) should use an input of size N.
     - both of these should return an RDD with level of parallelism P (number of partitions = P).
     """
-    raise NotImplementedError
+
+    def run_pipeline(rdd):
+        results = []
+        results.append(("q4", part1.q4(rdd)))
+        results.append(("q5", part1.q5(rdd)))
+        results.append(("q6", part1.q6(rdd)))
+        results.append(("q7", part1.q7(rdd)))
+        return results
+
+    rdd = part1.load_input(N, P)
+
+    results1 = run_pipeline(rdd)
+    results2 = [("q8a", part1.q8_a(N, P)), ("q8b", part1.q8_b(N, P))]
+
+    return results1 + results2
+
 
 """
 === Coding part 2: measuring the throughput and latency ===
@@ -108,9 +142,151 @@ and the latency of any individual input row is the same as the latency of the en
 That is why we are assuming the latency will just be the running time of the entire dataset.
 """
 
-# Copy in ThroughputHelper and LatencyHelper
 
-# Insert code to generate plots here as needed
+# Copy in ThroughputHelper and LatencyHelper
+NUM_RUNS = 1  # Number of runs to average throughput and latency
+
+
+class ThroughputHelper:
+    def __init__(self):
+        # Initialize the object.
+        self.pipelines = []
+
+        # Pipeline names
+        # A list of names for each pipeline
+        self.names = []
+
+        # Pipeline input sizes
+        self.sizes = []
+
+        # Pipeline throughputs
+        # This is set to None, but will be set to a list after throughputs
+        # are calculated.
+        self.throughputs = None
+
+    def add_pipeline(self, name, size, func):
+        self.pipelines.append(func)
+        self.names.append(name)
+        self.sizes.append(size)
+
+    def compare_throughput(self):
+        # Measure the throughput of all pipelines
+        # and store it in a list in self.throughputs.
+        # Make sure to use the NUM_RUNS variable.
+        # Also, return the resulting list of throughputs,
+        # in **number of items per second.**
+        self.throughputs = []
+        for func, size in zip(self.pipelines, self.sizes):
+            start_time = time.time()
+            for _ in range(NUM_RUNS):
+                func()
+            end_time = time.time()
+            total_time = end_time - start_time
+            items_per_second = (size * NUM_RUNS) / total_time
+            self.throughputs.append(items_per_second)
+        return self.throughputs
+
+
+class LatencyHelper:
+    def __init__(self):
+        # Initialize the object.
+        # Pipelines: a list of functions, where each function
+        # can be run on no arguments.
+        # (like: def f(): ... )
+        self.pipelines = []
+
+        # Pipeline names
+        # A list of names for each pipeline
+        self.names = []
+
+        # Pipeline latencies
+        # This is set to None, but will be set to a list after latencies
+        # are calculated.
+        self.latencies = None
+
+    def add_pipeline(self, name, func):
+        self.pipelines.append(func)
+        self.names.append(name)
+
+    def compare_latency(self):
+        # Measure the latency of all pipelines
+        # and store it in a list in self.latencies.
+        # Also, return the resulting list of latencies,
+        # in **milliseconds.**
+        self.latencies = []
+        for func in self.pipelines:
+            total_time = 0
+            for _ in range(NUM_RUNS):
+                start_time = time.time()
+                func()
+                end_time = time.time()
+                total_time += end_time - start_time
+            # Convert to milliseconds and get average
+            avg_latency = (total_time / NUM_RUNS) * 1000
+            self.latencies.append(avg_latency)
+        return self.latencies
+
+
+def measure_performance(N, P):
+    """Measure throughput and latency for given input size and parallelism"""
+    throughput_helper = ThroughputHelper()
+    latency_helper = LatencyHelper()
+
+    # Create a pipeline function that handles both inputs
+    def pipeline_func():
+        PART_1_PIPELINE_PARAMETRIC(N, P)
+
+    # Add pipeline to both helpers
+    pipeline_name = f"N={N},P={P}"
+    # For throughput we need total items processed (N from each input)
+    throughput_helper.add_pipeline(pipeline_name, 2 * N, pipeline_func)
+    latency_helper.add_pipeline(pipeline_name, pipeline_func)
+
+    # Measure performance
+    throughput = throughput_helper.compare_throughput()[0]  # First (only) pipeline
+    latency = latency_helper.compare_latency()[0]  # First (only) pipeline
+
+    return throughput, latency
+
+
+def generate_plots():
+    """Generate throughput and latency plots for different parallelism levels"""
+    input_sizes = [1, 10, 100, 1000, 10_000, 100_000, 1_000_000, 10_000_000]
+    parallelism_levels = [1, 2, 4, 8, 16]
+
+    os.makedirs("output", exist_ok=True)
+
+    # For each parallelism level
+    for P in parallelism_levels:
+        throughputs = []
+        latencies = []
+
+        # Test each input size
+        for N in input_sizes:
+            throughput, latency = measure_performance(N, P)
+            throughputs.append(throughput)
+            latencies.append(latency)
+
+        # Generate throughput plot
+        plt.figure(figsize=(10, 6))
+        plt.semilogx(input_sizes, throughputs, "b-o")
+        plt.grid(True)
+        plt.xlabel("Input Size (N)")
+        plt.ylabel("Throughput (items/sec)")
+        plt.title(f"Throughput vs Input Size (Parallelism = {P})")
+        plt.savefig(f"output/part3-throughput-{P}.png")
+        plt.close()
+
+        # Generate latency plot
+        plt.figure(figsize=(10, 6))
+        plt.semilogx(input_sizes, latencies, "r-o")
+        plt.grid(True)
+        plt.xlabel("Input Size (N)")
+        plt.ylabel("Latency (milliseconds)")  # Changed to milliseconds
+        plt.title(f"Latency vs Input Size (Parallelism = {P})")
+        plt.savefig(f"output/part3-latency-{P}.png")
+        plt.close()
+
 
 """
 === Reflection part ===
@@ -162,8 +338,8 @@ Please include specific numbers in your reflection (particularly for Q2).
 === Entrypoint ===
 """
 
-if __name__ == '__main__':
-    print("Complete part 3. Please use the main function below to generate your plots so that they are regenerated whenever the code is run:")
-
-    print("[add code here]")
-    # TODO: add code here
+if __name__ == "__main__":
+    print(
+        "Complete part 3. Please use the main function below to generate your plots so that they are regenerated whenever the code is run:"
+    )
+    generate_plots()

@@ -29,8 +29,15 @@ If you aren't sure of the type of the output, please post a question on Piazza.
 import pyspark
 from pyspark.sql import SparkSession
 
-spark = SparkSession.builder.appName("DataflowGraphExample").getOrCreate()
-sc = spark.sparkContext
+
+def get_spark():
+    if "spark" not in globals():
+        globals()["spark"] = SparkSession.builder.appName(
+            "DataflowGraphExample"
+        ).getOrCreate()
+        globals()["sc"] = globals()["spark"].sparkContext
+    return globals()["spark"], globals()["sc"]
+
 
 # Additional imports
 import pytest
@@ -174,10 +181,12 @@ set of integers between 1 and 1 million (inclusive).
 """
 
 
-def load_input():
+def load_input(N=None, P=None):
     # Return a parallelized RDD with the integers between 1 and 1,000,000
     # This will be referred to in the following questions.
-    return sc.parallelize(range(1, 1_000_001))
+    end = 1_000_001 if N is None else N + 1
+
+    return sc.parallelize(range(1, end), P)
 
 
 def q4(rdd):
@@ -391,24 +400,25 @@ You will need a new load_input function.
 """
 
 
-def load_input_bigger():
-    return sc.parallelize(range(1, 10_000_001))
+def load_input_bigger(N=None, P=None):
+    end = 10_000_001 if N is None else N + 1
+    return sc.parallelize(range(1, end), P)
 
 
-def q8_a():
+def q8_a(N=None, P=None):
     # version of Q6
     # It should call into q6() with the new RDD!
     # Don't re-implemented the q6 logic.
     # Output: a tuple (most common digit, most common frequency, least common digit, least common frequency)
-    return q6(load_input_bigger())
+    return q6(load_input_bigger(N, P))
 
 
-def q8_b():
+def q8_b(N=None, P=None):
     # version of Q7
     # It should call into q7() with the new RDD!
     # Don't re-implemented the q6 logic.
     # Output: a tulpe (most common char, most common frequency, least common char, least common frequency)
-    return q7(load_input_bigger())
+    return q7(load_input_bigger(N, P))
 
 
 """
@@ -680,6 +690,7 @@ def PART_1_PIPELINE():
 
 
 if __name__ == "__main__":
+    spark, sc = get_spark()
     log_answer("PART 1", PART_1_PIPELINE)
 
 """
